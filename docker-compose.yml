@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:16
+    container_name: library_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MAVEN_OPTS: "-Dmaven.resolver.transport=wagon"
+    container_name: library_api_app
+    restart: always
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL_DEV: jdbc:postgresql://db:5432/library_api_dev
+      DB_USER_DEV: ${DB_USER_DEV}
+      DB_PASSWORD_DEV: ${DB_PASSWORD_DEV}
+    ports:
+      - "8080:8080"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+volumes:
+  postgres_data:
