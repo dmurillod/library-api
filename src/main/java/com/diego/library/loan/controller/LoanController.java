@@ -5,6 +5,7 @@ import com.diego.library.loan.dto.LoanResponse;
 import com.diego.library.loan.mapper.LoanMapper;
 import com.diego.library.loan.service.LoanService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class LoanController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public LoanResponse create(@Valid @RequestBody LoanRequest request) {
         return LoanMapper.toResponse(
                 service.createLoan(request.getMemberId(), request.getBookId())

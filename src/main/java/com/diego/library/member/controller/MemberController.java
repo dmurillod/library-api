@@ -4,6 +4,7 @@ import com.diego.library.member.dto.MemberRequest;
 import com.diego.library.member.dto.MemberResponse;
 import com.diego.library.member.service.MemberService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class MemberController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public MemberResponse create(@Valid @RequestBody MemberRequest request) {
         return service.create(request);
     }
@@ -40,6 +42,7 @@ public class MemberController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

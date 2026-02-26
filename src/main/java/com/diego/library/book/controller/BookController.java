@@ -4,6 +4,7 @@ import com.diego.library.book.dto.BookRequest;
 import com.diego.library.book.dto.BookResponse;
 import com.diego.library.book.service.BookService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class BookController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public BookResponse create(@Valid @RequestBody BookRequest request) {
         return service.create(request);
     }
@@ -40,6 +42,7 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
