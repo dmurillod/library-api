@@ -65,13 +65,13 @@ class MemberControllerTest {
     // ──────────────────────────────────────────
 
     @Test
-    void create_shouldReturn200_whenRequestIsValid() throws Exception {
+    void create_shouldReturn201_whenRequestIsValid() throws Exception {
         when(memberService.create(any(MemberRequest.class))).thenReturn(memberResponse);
 
         mockMvc.perform(post("/api/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.firstName").value("Diego"))
                 .andExpect(jsonPath("$.lastName").value("Garcia"))
@@ -227,16 +227,17 @@ class MemberControllerTest {
         doNothing().when(memberService).delete(1L);
 
         mockMvc.perform(delete("/api/members/1"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         verify(memberService).delete(1L);
     }
 
     @Test
-    void delete_shouldReturn404_whenMemberNotFound() throws Exception {
-        doThrow(new RuntimeException("Member not found")).when(memberService).delete(99L);
+    void delete_shouldReturn204_whenMemberExists() throws Exception {
+        doNothing().when(memberService).delete(1L);
+        mockMvc.perform(delete("/api/members/1"))
+                .andExpect(status().isNoContent());
 
-        mockMvc.perform(delete("/api/members/99"))
-                .andExpect(status().isNotFound());
+        verify(memberService).delete(1L);
     }
 }

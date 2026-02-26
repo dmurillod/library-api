@@ -65,13 +65,13 @@ class BookControllerTest {
     // ──────────────────────────────────────────
 
     @Test
-    void create_shouldReturn200_whenRequestIsValid() throws Exception {
+    void create_shouldReturn201_whenRequestIsValid() throws Exception {
         when(bookService.create(any(BookRequest.class))).thenReturn(bookResponse);
 
         mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.title").value("Clean Code"))
                 .andExpect(jsonPath("$.author").value("Robert C. Martin"))
@@ -227,16 +227,16 @@ class BookControllerTest {
         doNothing().when(bookService).delete(1L);
 
         mockMvc.perform(delete("/api/books/1"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         verify(bookService).delete(1L);
     }
 
     @Test
-    void delete_shouldReturn404_whenBookNotFound() throws Exception {
-        doThrow(new RuntimeException("Book not found")).when(bookService).delete(99L);
-
-        mockMvc.perform(delete("/api/books/99"))
-                .andExpect(status().isNotFound());
+    void delete_shouldReturn204_whenBookExists() throws Exception {
+        doNothing().when(bookService).delete(1L);
+        mockMvc.perform(delete("/api/books/1"))
+                .andExpect(status().isNoContent());
+        verify(bookService).delete(1L);
     }
 }

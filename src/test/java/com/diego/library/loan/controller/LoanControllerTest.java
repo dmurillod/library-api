@@ -77,13 +77,13 @@ class LoanControllerTest {
     // ──────────────────────────────────────────
 
     @Test
-    void create_shouldReturn200_whenRequestIsValid() throws Exception {
+    void create_shouldReturn201_whenRequestIsValid() throws Exception {
         when(loanService.createLoan(1L, 1L)).thenReturn(loan);
 
         mockMvc.perform(post("/api/loans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.memberId").value(1L))
                 .andExpect(jsonPath("$.bookId").value(1L))
