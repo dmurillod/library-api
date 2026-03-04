@@ -21,7 +21,7 @@ REST API for library management built with Spring Boot, PostgreSQL and Docker.
 - Spring Boot 3.5
 - PostgreSQL 16
 - Docker + Docker Compose
-- GitHub Actions CI/CD
+- GitHub Actions CI / CD
 - JaCoCo (coverage ≥ 60% staging, ≥ 85% production)
 
 ## 📡 API Endpoints
