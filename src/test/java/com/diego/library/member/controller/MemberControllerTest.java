@@ -61,14 +61,14 @@ class MemberControllerTest {
     }
 
     // ──────────────────────────────────────────
-    // POST /api/members
-    // ──────────────────────────────────────────
+// POST /api/v1/members
+// ──────────────────────────────────────────
 
     @Test
     void create_shouldReturn201_whenRequestIsValid() throws Exception {
         when(memberService.create(any(MemberRequest.class))).thenReturn(memberResponse);
 
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/v1/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated())
@@ -85,7 +85,7 @@ class MemberControllerTest {
     void create_shouldReturn400_whenFirstNameIsBlank() throws Exception {
         validRequest.setFirstName("");
 
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/v1/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -97,7 +97,7 @@ class MemberControllerTest {
     void create_shouldReturn400_whenLastNameIsBlank() throws Exception {
         validRequest.setLastName("");
 
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/v1/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -109,7 +109,7 @@ class MemberControllerTest {
     void create_shouldReturn400_whenEmailIsInvalid() throws Exception {
         validRequest.setEmail("not-an-email");
 
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/v1/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -119,22 +119,22 @@ class MemberControllerTest {
 
     @Test
     void create_shouldReturn400_whenBodyIsMissing() throws Exception {
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/v1/members")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(memberService);
     }
 
-    // ──────────────────────────────────────────
-    // GET /api/members/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// GET /api/v1/members/{id}
+// ──────────────────────────────────────────
 
     @Test
     void findById_shouldReturn200_whenMemberExists() throws Exception {
         when(memberService.findById(1L)).thenReturn(memberResponse);
 
-        mockMvc.perform(get("/api/members/1"))
+        mockMvc.perform(get("/api/v1/members/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.firstName").value("Diego"))
@@ -147,19 +147,19 @@ class MemberControllerTest {
     void findById_shouldReturn404_whenMemberNotFound() throws Exception {
         when(memberService.findById(99L)).thenThrow(new RuntimeException("Member not found"));
 
-        mockMvc.perform(get("/api/members/99"))
+        mockMvc.perform(get("/api/v1/members/99"))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // GET /api/members
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// GET /api/v1/members
+// ──────────────────────────────────────────
 
     @Test
     void findAll_shouldReturn200_withListOfMembers() throws Exception {
         when(memberService.findAll()).thenReturn(List.of(memberResponse));
 
-        mockMvc.perform(get("/api/members"))
+        mockMvc.perform(get("/api/v1/members"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1L))
@@ -172,20 +172,20 @@ class MemberControllerTest {
     void findAll_shouldReturn200_withEmptyList() throws Exception {
         when(memberService.findAll()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/members"))
+        mockMvc.perform(get("/api/v1/members"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
-    // ──────────────────────────────────────────
-    // PUT /api/members/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// PUT /api/v1/members/{id}
+// ──────────────────────────────────────────
 
     @Test
     void update_shouldReturn200_whenRequestIsValid() throws Exception {
         when(memberService.update(eq(1L), any(MemberRequest.class))).thenReturn(memberResponse);
 
-        mockMvc.perform(put("/api/members/1")
+        mockMvc.perform(put("/api/v1/members/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isOk())
@@ -199,7 +199,7 @@ class MemberControllerTest {
     void update_shouldReturn400_whenEmailIsInvalid() throws Exception {
         validRequest.setEmail("bad-email");
 
-        mockMvc.perform(put("/api/members/1")
+        mockMvc.perform(put("/api/v1/members/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -212,32 +212,31 @@ class MemberControllerTest {
         when(memberService.update(eq(99L), any(MemberRequest.class)))
                 .thenThrow(new RuntimeException("Member not found"));
 
-        mockMvc.perform(put("/api/members/99")
+        mockMvc.perform(put("/api/v1/members/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // DELETE /api/members/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// DELETE /api/v1/members/{id}
+// ──────────────────────────────────────────
 
     @Test
-    void delete_shouldReturn200_whenMemberExists() throws Exception {
+    void delete_shouldReturn204_whenMemberExists() throws Exception {
         doNothing().when(memberService).delete(1L);
 
-        mockMvc.perform(delete("/api/members/1"))
+        mockMvc.perform(delete("/api/v1/members/1"))
                 .andExpect(status().isNoContent());
 
         verify(memberService).delete(1L);
     }
 
     @Test
-    void delete_shouldReturn204_whenMemberExists() throws Exception {
-        doNothing().when(memberService).delete(1L);
-        mockMvc.perform(delete("/api/members/1"))
-                .andExpect(status().isNoContent());
+    void delete_shouldReturn404_whenMemberNotFound() throws Exception {
+        doThrow(new RuntimeException("Member not found")).when(memberService).delete(99L);
 
-        verify(memberService).delete(1L);
+        mockMvc.perform(delete("/api/v1/members/99"))
+                .andExpect(status().isNotFound());
     }
 }
