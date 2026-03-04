@@ -73,14 +73,14 @@ class LoanControllerTest {
     }
 
     // ──────────────────────────────────────────
-    // POST /api/loans
-    // ──────────────────────────────────────────
+// POST /api/v1/loans
+// ──────────────────────────────────────────
 
     @Test
     void create_shouldReturn201_whenRequestIsValid() throws Exception {
         when(loanService.createLoan(1L, 1L)).thenReturn(loan);
 
-        mockMvc.perform(post("/api/loans")
+        mockMvc.perform(post("/api/v1/loans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated())
@@ -96,7 +96,7 @@ class LoanControllerTest {
     void create_shouldReturn400_whenMemberIdIsNull() throws Exception {
         validRequest.setMemberId(null);
 
-        mockMvc.perform(post("/api/loans")
+        mockMvc.perform(post("/api/v1/loans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -108,7 +108,7 @@ class LoanControllerTest {
     void create_shouldReturn400_whenBookIdIsNull() throws Exception {
         validRequest.setBookId(null);
 
-        mockMvc.perform(post("/api/loans")
+        mockMvc.perform(post("/api/v1/loans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -118,7 +118,7 @@ class LoanControllerTest {
 
     @Test
     void create_shouldReturn400_whenBodyIsMissing() throws Exception {
-        mockMvc.perform(post("/api/loans")
+        mockMvc.perform(post("/api/v1/loans")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
@@ -131,7 +131,7 @@ class LoanControllerTest {
 
         validRequest.setMemberId(99L);
 
-        mockMvc.perform(post("/api/loans")
+        mockMvc.perform(post("/api/v1/loans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isNotFound());
@@ -143,22 +143,22 @@ class LoanControllerTest {
 
         validRequest.setBookId(99L);
 
-        mockMvc.perform(post("/api/loans")
+        mockMvc.perform(post("/api/v1/loans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // PUT /api/loans/{id}/return
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// PUT /api/v1/loans/{id}/return
+// ──────────────────────────────────────────
 
     @Test
     void returnBook_shouldReturn200_whenLoanExists() throws Exception {
         loan.setReturnDate(LocalDateTime.now());
         when(loanService.returnBook(1L)).thenReturn(loan);
 
-        mockMvc.perform(put("/api/loans/1/return"))
+        mockMvc.perform(put("/api/v1/loans/1/return"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.returnDate").isNotEmpty());
@@ -170,7 +170,7 @@ class LoanControllerTest {
     void returnBook_shouldReturn404_whenLoanNotFound() throws Exception {
         when(loanService.returnBook(99L)).thenThrow(new RuntimeException("Loan not found"));
 
-        mockMvc.perform(put("/api/loans/99/return"))
+        mockMvc.perform(put("/api/v1/loans/99/return"))
                 .andExpect(status().isNotFound());
     }
 
@@ -178,19 +178,19 @@ class LoanControllerTest {
     void returnBook_shouldReturn404_whenBookAlreadyReturned() throws Exception {
         when(loanService.returnBook(1L)).thenThrow(new RuntimeException("Book already returned"));
 
-        mockMvc.perform(put("/api/loans/1/return"))
+        mockMvc.perform(put("/api/v1/loans/1/return"))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // GET /api/loans/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// GET /api/v1/loans/{id}
+// ──────────────────────────────────────────
 
     @Test
     void findById_shouldReturn200_whenLoanExists() throws Exception {
         when(loanService.findById(1L)).thenReturn(loan);
 
-        mockMvc.perform(get("/api/loans/1"))
+        mockMvc.perform(get("/api/v1/loans/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.memberId").value(1L))
@@ -203,19 +203,19 @@ class LoanControllerTest {
     void findById_shouldReturn404_whenLoanNotFound() throws Exception {
         when(loanService.findById(99L)).thenThrow(new RuntimeException("Loan not found"));
 
-        mockMvc.perform(get("/api/loans/99"))
+        mockMvc.perform(get("/api/v1/loans/99"))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // GET /api/loans
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// GET /api/v1/loans
+// ──────────────────────────────────────────
 
     @Test
     void findAll_shouldReturn200_withListOfLoans() throws Exception {
         when(loanService.findAll()).thenReturn(List.of(loan));
 
-        mockMvc.perform(get("/api/loans"))
+        mockMvc.perform(get("/api/v1/loans"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1L))
@@ -229,7 +229,7 @@ class LoanControllerTest {
     void findAll_shouldReturn200_withEmptyList() throws Exception {
         when(loanService.findAll()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/loans"))
+        mockMvc.perform(get("/api/v1/loans"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }

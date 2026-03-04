@@ -61,14 +61,14 @@ class BookControllerTest {
     }
 
     // ──────────────────────────────────────────
-    // POST /api/books
+    // POST /api/v1/books
     // ──────────────────────────────────────────
 
     @Test
     void create_shouldReturn201_whenRequestIsValid() throws Exception {
         when(bookService.create(any(BookRequest.class))).thenReturn(bookResponse);
 
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated())
@@ -85,7 +85,7 @@ class BookControllerTest {
     void create_shouldReturn400_whenTitleIsBlank() throws Exception {
         validRequest.setTitle("");
 
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -97,7 +97,7 @@ class BookControllerTest {
     void create_shouldReturn400_whenAuthorIsBlank() throws Exception {
         validRequest.setAuthor("");
 
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -109,7 +109,7 @@ class BookControllerTest {
     void create_shouldReturn400_whenIsbnIsBlank() throws Exception {
         validRequest.setIsbn("");
 
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -119,22 +119,22 @@ class BookControllerTest {
 
     @Test
     void create_shouldReturn400_whenBodyIsMissing() throws Exception {
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(bookService);
     }
 
-    // ──────────────────────────────────────────
-    // GET /api/books/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// GET /api/v1/books/{id}
+// ──────────────────────────────────────────
 
     @Test
     void findById_shouldReturn200_whenBookExists() throws Exception {
         when(bookService.findById(1L)).thenReturn(bookResponse);
 
-        mockMvc.perform(get("/api/books/1"))
+        mockMvc.perform(get("/api/v1/books/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.title").value("Clean Code"))
@@ -147,19 +147,19 @@ class BookControllerTest {
     void findById_shouldReturn404_whenBookNotFound() throws Exception {
         when(bookService.findById(99L)).thenThrow(new RuntimeException("Book not found"));
 
-        mockMvc.perform(get("/api/books/99"))
+        mockMvc.perform(get("/api/v1/books/99"))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // GET /api/books
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// GET /api/v1/books
+// ──────────────────────────────────────────
 
     @Test
     void findAll_shouldReturn200_withListOfBooks() throws Exception {
         when(bookService.findAll()).thenReturn(List.of(bookResponse));
 
-        mockMvc.perform(get("/api/books"))
+        mockMvc.perform(get("/api/v1/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1L))
@@ -172,20 +172,20 @@ class BookControllerTest {
     void findAll_shouldReturn200_withEmptyList() throws Exception {
         when(bookService.findAll()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/books"))
+        mockMvc.perform(get("/api/v1/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
-    // ──────────────────────────────────────────
-    // PUT /api/books/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// PUT /api/v1/books/{id}
+// ──────────────────────────────────────────
 
     @Test
     void update_shouldReturn200_whenRequestIsValid() throws Exception {
         when(bookService.update(eq(1L), any(BookRequest.class))).thenReturn(bookResponse);
 
-        mockMvc.perform(put("/api/books/1")
+        mockMvc.perform(put("/api/v1/books/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isOk())
@@ -199,7 +199,7 @@ class BookControllerTest {
     void update_shouldReturn400_whenTitleIsBlank() throws Exception {
         validRequest.setTitle("");
 
-        mockMvc.perform(put("/api/books/1")
+        mockMvc.perform(put("/api/v1/books/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isBadRequest());
@@ -212,31 +212,31 @@ class BookControllerTest {
         when(bookService.update(eq(99L), any(BookRequest.class)))
                 .thenThrow(new RuntimeException("Book not found"));
 
-        mockMvc.perform(put("/api/books/99")
+        mockMvc.perform(put("/api/v1/books/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isNotFound());
     }
 
-    // ──────────────────────────────────────────
-    // DELETE /api/books/{id}
-    // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// DELETE /api/v1/books/{id}
+// ──────────────────────────────────────────
 
     @Test
-    void delete_shouldReturn200_whenBookExists() throws Exception {
+    void delete_shouldReturn204_whenBookExists() throws Exception {
         doNothing().when(bookService).delete(1L);
 
-        mockMvc.perform(delete("/api/books/1"))
+        mockMvc.perform(delete("/api/v1/books/1"))
                 .andExpect(status().isNoContent());
 
         verify(bookService).delete(1L);
     }
 
     @Test
-    void delete_shouldReturn204_whenBookExists() throws Exception {
-        doNothing().when(bookService).delete(1L);
-        mockMvc.perform(delete("/api/books/1"))
-                .andExpect(status().isNoContent());
-        verify(bookService).delete(1L);
+    void delete_shouldReturn404_whenBookNotFound() throws Exception {
+        doThrow(new RuntimeException("Book not found")).when(bookService).delete(99L);
+
+        mockMvc.perform(delete("/api/v1/books/99"))
+                .andExpect(status().isNotFound());
     }
 }
