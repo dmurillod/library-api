@@ -14,6 +14,11 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build:
@@ -24,17 +29,45 @@ services:
     container_name: library_api_app
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: dev
       DB_URL_DEV: jdbc:postgresql://db:5432/library_api_dev
       DB_USER_DEV: ${DB_USER_DEV}
       DB_PASSWORD_DEV: ${DB_PASSWORD_DEV}
+      RECEIPTS_SERVICE_URL_DEV: ${RECEIPTS_SERVICE_URL_DEV:-http://host.docker.internal:8082}
     ports:
       - "8080:8080"
     dns:
       - 8.8.8.8
       - 8.8.4.4
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: library_prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: library_grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
+  grafana-data:
