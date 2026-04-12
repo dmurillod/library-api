@@ -37,6 +37,7 @@ services:
       DB_USER_DEV: ${DB_USER_DEV}
       DB_PASSWORD_DEV: ${DB_PASSWORD_DEV}
       RECEIPTS_SERVICE_URL_DEV: ${RECEIPTS_SERVICE_URL_DEV:-http://host.docker.internal:8082}
+      SERVER_PORT: 8080
     ports:
       - "8080:8080"
     dns:
