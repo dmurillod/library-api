@@ -10,3 +10,22 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+services:
+  receipts:
+    url: ${RECEIPTS_SERVICE_URL_DEV:http://localhost:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
