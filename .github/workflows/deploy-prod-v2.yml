@@ -26,6 +26,7 @@ jobs:
     needs: test
     outputs:
       image: ${{ steps.build-image.outputs.image }}
+      registry: ${{ steps.login-ecr.outputs.registry }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,39 +58,37 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          IMAGE: ${{ needs.build-and-push.outputs.image }}
+          REGISTRY: ${{ needs.build-and-push.outputs.registry }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          DB_URL: ${{ secrets.DB_URL_PROD_V2 }}
+          DB_USER: ${{ secrets.DB_USER_PROD_V2 }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD_PROD_V2 }}
+          RECEIPTS_URL: ${{ secrets.RECEIPTS_SERVICE_URL_PROD }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: IMAGE,REGISTRY,AWS_REGION,DB_URL,DB_USER,DB_PASSWORD,RECEIPTS_URL
           script: |
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-              docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
-            
-            docker pull ${{ needs.build-and-push.outputs.image }}
-            
+            aws ecr get-login-password --region $AWS_REGION | \
+              docker login --username AWS --password-stdin $REGISTRY
+
+            docker pull $IMAGE
+
             docker stop library-api || true
             docker rm library-api || true
-            
+
             docker run -d \
               --name library-api \
               --restart always \
               -p 8080:8080 \
               -e SPRING_PROFILES_ACTIVE=prod \
-              -e DB_URL_PROD=${{ secrets.DB_URL_PROD_V2 }} \
-              -e DB_USER_PROD=${{ secrets.DB_USER_PROD_V2 }} \
-              -e DB_PASSWORD_PROD=${{ secrets.DB_PASSWORD_PROD_V2 }} \
-              -e RECEIPTS_SERVICE_URL_PROD=${{ secrets.RECEIPTS_SERVICE_URL_PROD }} \
-              ${{ needs.build-and-push.outputs.image }}
+              -e DB_URL_PROD=$DB_URL \
+              -e DB_USER_PROD=$DB_USER \
+              -e DB_PASSWORD_PROD=$DB_PASSWORD \
+              -e RECEIPTS_SERVICE_URL_PROD=$RECEIPTS_URL \
+              $IMAGE
