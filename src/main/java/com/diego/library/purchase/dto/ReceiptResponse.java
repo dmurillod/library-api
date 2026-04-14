@@ -1,7 +1,7 @@
 package com.diego.library.purchase.dto;
 
 public record ReceiptResponse(
-        Long id,
+        String id,
         String empresa,
         String nit,
         String item,
