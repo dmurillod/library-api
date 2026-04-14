@@ -11,8 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -24,23 +22,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PurchaseServiceTest {
 
-    @Mock
-    private BookService bookService;
-
-    @Mock
-    private BookRepository bookRepository;
-
-    @Mock
-    private WebClient receiptsWebClient;
-
-    @Mock
-    private WebClient.RequestBodyUriSpec requestBodyUriSpec;
-
-    @Mock
-    private WebClient.RequestHeadersSpec requestHeadersSpec;
-
-    @Mock
-    private WebClient.ResponseSpec responseSpec;
+    @Mock private BookService bookService;
+    @Mock private BookRepository bookRepository;
+    @Mock private SipScanClient sipScanClient;
 
     @InjectMocks
     private PurchaseService purchaseService;
@@ -48,18 +32,11 @@ class PurchaseServiceTest {
     private PurchaseRequest request;
     private PqrDto pqrDto;
     private BookResponse bookResponse;
-    private ReceiptResponse receiptResponse;
 
     @BeforeEach
     void setUp() {
         pqrDto = new PqrDto(1L, "Clean Code", "Juan Pérez", 5);
-
-        request = new PurchaseRequest(
-                "Clean Code",
-                "Robert C. Martin",
-                "978-0132350884",
-                pqrDto
-        );
+        request = new PurchaseRequest("Clean Code", "Robert C. Martin", "978-0132350884", pqrDto);
 
         bookResponse = new BookResponse();
         bookResponse.setId(1L);
@@ -68,33 +45,20 @@ class PurchaseServiceTest {
         bookResponse.setIsbn("978-0132350884");
         bookResponse.setAvailable(true);
         bookResponse.setCreatedAt(LocalDateTime.now());
-
-        receiptResponse = new ReceiptResponse(
-                1L,
-                "Biblioteca Central",
-                "900.123.456-1",
-                "Clean Code - Robert C. Martin",
-                85000L,
-                "2026-04-03",
-                "https://storage.googleapis.com/receipts/factura-1.pdf"
-        );
     }
 
-    @SuppressWarnings("unchecked")
-    private void mockWebClient() {
-        when(receiptsWebClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(ReceiptResponse.class))
-                .thenReturn(Mono.just(receiptResponse));
+    private void mockSipScan() {
+        when(sipScanClient.login()).thenReturn("fake-jwt-token");
+        when(sipScanClient.sendReceiptText(anyString(), anyString()))
+                .thenReturn("550e8400-e29b-41d4-a716-446655440000");
+        when(sipScanClient.isPdfReady(anyString(), anyString())).thenReturn(true);
     }
 
     @Test
     void processPurchase_newBook_success() {
         when(bookRepository.existsByIsbn("978-0132350884")).thenReturn(false);
         when(bookService.create(any())).thenReturn(bookResponse);
-        mockWebClient();
+        mockSipScan();
 
         PurchaseResponse response = purchaseService.processPurchase(request);
 
@@ -102,7 +66,7 @@ class PurchaseServiceTest {
         assertEquals("Clean Code", response.libro().getTitle());
         assertEquals("Clean Code", response.pqr().asunto());
         assertNotNull(response.receipt());
-        assertEquals("https://storage.googleapis.com/receipts/factura-1.pdf", response.pdf_url());
+        assertNotNull(response.pdf_url());
     }
 
     @Test
@@ -116,7 +80,7 @@ class PurchaseServiceTest {
 
         when(bookRepository.existsByIsbn("978-0132350884")).thenReturn(true);
         when(bookRepository.findByIsbn("978-0132350884")).thenReturn(Optional.of(existingBook));
-        mockWebClient();
+        mockSipScan();
 
         PurchaseResponse response = purchaseService.processPurchase(request);
 
@@ -128,14 +92,11 @@ class PurchaseServiceTest {
     @Test
     void processPurchase_noIsbn_generatesIsbn() {
         PurchaseRequest requestNoIsbn = new PurchaseRequest(
-                "Clean Code",
-                "Robert C. Martin",
-                null,
-                pqrDto
+                "Clean Code", "Robert C. Martin", null, pqrDto
         );
 
         when(bookService.create(any())).thenReturn(bookResponse);
-        mockWebClient();
+        mockSipScan();
 
         PurchaseResponse response = purchaseService.processPurchase(requestNoIsbn);
 

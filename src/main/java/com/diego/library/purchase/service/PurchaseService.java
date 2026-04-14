@@ -6,32 +6,59 @@ import com.diego.library.book.repository.BookRepository;
 import com.diego.library.book.service.BookService;
 import com.diego.library.purchase.dto.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
-import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class PurchaseService {
 
     private final BookService bookService;
     private final BookRepository bookRepository;
-    private final WebClient receiptsWebClient;
+    private final SipScanClient sipScanClient;
 
     public PurchaseService(BookService bookService,
                            BookRepository bookRepository,
-                           WebClient receiptsWebClient) {
+                           SipScanClient sipScanClient) {
         this.bookService = bookService;
         this.bookRepository = bookRepository;
-        this.receiptsWebClient = receiptsWebClient;
+        this.sipScanClient = sipScanClient;
     }
 
     public PurchaseResponse processPurchase(PurchaseRequest request) {
 
-        // 1. Registrar libro en BD (si ya existe por ISBN, lo reutiliza)
-        BookResponse savedBook;
+        // 1. Registrar libro en BD
+        BookResponse savedBook = getOrCreateBook(request);
+
+        // 2. Login al ERP de Daniel
+        String token = sipScanClient.login();
+
+        // 3. Construir texto de factura
+        String facturaText = buildFacturaText(savedBook, request);
+
+        // 4. Enviar texto y obtener receipt_id
+        String receiptId = sipScanClient.sendReceiptText(token, facturaText);
+
+        // 5. Polling hasta que el PDF esté listo (máx 30 segundos)
+        String pdfUrl = waitForPdf(token, receiptId);
+
+        // 6. Construir respuesta enriquecida
+        ReceiptResponse receipt = new ReceiptResponse(
+                receiptId,
+                "Biblioteca Central",
+                "901000123",
+                savedBook.getTitle() + " - " + savedBook.getAuthor(),
+                85000L,
+                LocalDate.now().toString(),
+                pdfUrl
+        );
+
+        return new PurchaseResponse(request.pqr(), savedBook, receipt, pdfUrl);
+    }
+
+    private BookResponse getOrCreateBook(PurchaseRequest request) {
         if (request.isbn() != null && bookRepository.existsByIsbn(request.isbn())) {
-            savedBook = bookRepository.findByIsbn(request.isbn())
+            return bookRepository.findByIsbn(request.isbn())
                     .map(b -> {
                         BookResponse r = new BookResponse();
                         r.setId(b.getId());
@@ -42,57 +69,42 @@ public class PurchaseService {
                         r.setCreatedAt(b.getCreatedAt());
                         return r;
                     }).orElseThrow();
-        } else {
-            BookRequest bookRequest = new BookRequest();
-            bookRequest.setTitle(request.titulo_libro());
-            bookRequest.setAuthor(request.autor());
-            bookRequest.setIsbn(request.isbn() != null ? request.isbn() : generateIsbn(request.titulo_libro()));
-            savedBook = bookService.create(bookRequest);
         }
-
-        // 2. Construir payload para el MS de Daniel
-        Map<String, Object> receiptPayload = Map.of(
-                "empresa", "Biblioteca Central",
-                "nit", "900.123.456-1",
-                "item", savedBook.getTitle() + " - " + savedBook.getAuthor(),
-                "isbn", savedBook.getIsbn(),
-                "valor", 85000,
-                "fecha", LocalDate.now().toString(),
-                "comprador", "Biblioteca Central",
-                "libro", Map.of(
-                        "id", savedBook.getId(),
-                        "titulo", savedBook.getTitle(),
-                        "autor", savedBook.getAuthor(),
-                        "isbn", savedBook.getIsbn()
-                ),
-                "pqr", Map.of(
-                        "id", request.pqr().id(),
-                        "asunto", request.pqr().asunto(),
-                        "responsable", request.pqr().responsable(),
-                        "conteo", request.pqr().conteo()
-                )
-        );
-
-        // 3. Llamar al MS de Daniel (Receipts en GCP)
-        ReceiptResponse receipt = receiptsWebClient.post()
-                .uri("/api/v2/receipts/generate")
-                .bodyValue(receiptPayload)
-                .retrieve()
-                .bodyToMono(ReceiptResponse.class)
-                .block();
-
-        // 4. Devolver respuesta enriquecida con los 3 objetos
-        return new PurchaseResponse(
-                request.pqr(),
-                savedBook,
-                receipt,
-                receipt != null ? receipt.pdf_url() : null
-        );
+        BookRequest bookRequest = new BookRequest();
+        bookRequest.setTitle(request.titulo_libro());
+        bookRequest.setAuthor(request.autor());
+        bookRequest.setIsbn(request.isbn() != null ? request.isbn()
+                : "GEN-" + request.titulo_libro().replaceAll("\\s+", "-").toUpperCase()
+                + "-" + System.currentTimeMillis());
+        return bookService.create(bookRequest);
     }
 
-    // Genera un ISBN temporal si no viene en el request
-    private String generateIsbn(String titulo) {
-        return "GEN-" + titulo.replaceAll("\\s+", "-").toUpperCase()
-                + "-" + System.currentTimeMillis();
+    private String waitForPdf(String token, String receiptId) {
+        int maxAttempts = 10;
+        for (int i = 0; i < maxAttempts; i++) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (sipScanClient.isPdfReady(token, receiptId)) {
+                break;
+            }
+        }
+        return "http://3.12.170.176:8000/v2/receipts/" + receiptId + "/pdf";
+    }
+
+    private String buildFacturaText(BookResponse book, PurchaseRequest request) {
+        return "Biblioteca Central\n" +
+                "NIT: 900.123.456-1\n" +
+                "Orden de Compra\n" +
+                "Fecha: " + LocalDate.now() + "\n" +
+                "Libro: " + book.getTitle() + "\n" +
+                "Autor: " + book.getAuthor() + "\n" +
+                "ISBN: " + book.getIsbn() + "\n" +
+                "Valor: $85.000\n" +
+                "Solicitado por PQR: " + request.pqr().asunto() + "\n" +
+                "Responsable: " + request.pqr().responsable() + "\n" +
+                "Cantidad de solicitudes: " + request.pqr().conteo();
     }
 }
