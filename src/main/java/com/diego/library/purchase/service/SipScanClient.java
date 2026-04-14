@@ -2,14 +2,25 @@ package com.diego.library.purchase.service;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 public class SipScanClient {
 
     private final WebClient erpWebClient;
     private final WebClient receiptsWebClient;
+
+    private static final String RECEIPTS_BASE_URL = "http://3.12.170.176:8000";
+    private static final String WS_URL = "ws://3.12.170.176:8000/receipts/ws";
+    private static final String UPLOADER_NIT = "901000123";
 
     public SipScanClient(WebClient erpWebClient, WebClient receiptsWebClient) {
         this.erpWebClient = erpWebClient;
@@ -38,7 +49,7 @@ public class SipScanClient {
                 .uri("/v2/receipts/from-text")
                 .header("Authorization", "Bearer " + token)
                 .bodyValue(Map.of(
-                        "uploader_nit", "901000123",
+                        "uploader_nit", UPLOADER_NIT,
                         "text", text
                 ))
                 .retrieve()
@@ -49,6 +60,47 @@ public class SipScanClient {
             throw new RuntimeException("No se pudo crear el recibo");
         }
         return (String) response.get("id");
+    }
+
+    public String waitForReceiptViaWebSocket(String token, String receiptId) {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<String> completedReceiptId = new AtomicReference<>();
+
+        String wsUrl = WS_URL + "?nit=" + UPLOADER_NIT + "&token=" + token;
+
+        StandardWebSocketClient wsClient = new StandardWebSocketClient();
+
+        try {
+            wsClient.execute(new AbstractWebSocketHandler() {
+                @Override
+                protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+                    String payload = message.getPayload();
+
+                    if (payload.contains("suggestion_completed")) {
+                        if (payload.contains(receiptId)) {
+                            completedReceiptId.set(receiptId);
+                            latch.countDown();
+                            session.close();
+                        }
+                    }
+                }
+
+                @Override
+                public void afterConnectionEstablished(WebSocketSession session) {
+                }
+            }, wsUrl).get(10, TimeUnit.SECONDS);
+
+            boolean received = latch.await(120, TimeUnit.SECONDS);
+
+            if (!received) {
+                return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
+            }
+
+        } catch (Exception e) {
+            return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
+        }
+
+        return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
     }
 
     public boolean isPdfReady(String token, String receiptId) {
