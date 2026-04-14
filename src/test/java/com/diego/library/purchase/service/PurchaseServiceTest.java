@@ -117,4 +117,52 @@ class PurchaseServiceTest {
         assertEquals("Biblioteca Central", response.receipt().empresa());
         assertEquals("901000123", response.receipt().nit());
     }
+
+    @Test
+    void processPurchase_pqrDataIsPreserved() {
+        when(bookRepository.existsByIsbn("978-0132350884")).thenReturn(false);
+        when(bookService.create(any())).thenReturn(bookResponse);
+        mockSipScan();
+
+        PurchaseResponse response = purchaseService.processPurchase(request);
+
+        assertEquals(1L, response.pqr().id());
+        assertEquals("Clean Code", response.pqr().asunto());
+        assertEquals("Juan Pérez", response.pqr().responsable());
+        assertEquals(5, response.pqr().conteo());
+    }
+
+    @Test
+    void processPurchase_receiptContainsBookInfo() {
+        when(bookRepository.existsByIsbn("978-0132350884")).thenReturn(false);
+        when(bookService.create(any())).thenReturn(bookResponse);
+        mockSipScan();
+
+        PurchaseResponse response = purchaseService.processPurchase(request);
+
+        assertTrue(response.receipt().item().contains("Clean Code"));
+        assertTrue(response.receipt().item().contains("Robert C. Martin"));
+        assertEquals(85000L, response.receipt().valor());
+    }
+
+    @Test
+    void processPurchase_existingBook_receiptHasCorrectData() {
+        Book existingBook = new Book();
+        existingBook.setId(2L);
+        existingBook.setTitle("Clean Code");
+        existingBook.setAuthor("Robert C. Martin");
+        existingBook.setIsbn("978-0132350884");
+        existingBook.setAvailable(true);
+
+        when(bookRepository.existsByIsbn("978-0132350884")).thenReturn(true);
+        when(bookRepository.findByIsbn("978-0132350884")).thenReturn(Optional.of(existingBook));
+        mockSipScan();
+
+        PurchaseResponse response = purchaseService.processPurchase(request);
+
+        assertNotNull(response.pdf_url());
+        assertNotNull(response.receipt());
+        assertEquals("Clean Code", response.pqr().asunto());
+        assertEquals(2L, response.libro().getId());
+    }
 }
