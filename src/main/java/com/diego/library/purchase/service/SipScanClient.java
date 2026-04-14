@@ -18,8 +18,8 @@ public class SipScanClient {
     private final WebClient erpWebClient;
     private final WebClient receiptsWebClient;
 
-    private static final String RECEIPTS_BASE_URL = "http://3.12.170.176:8000";
-    private static final String WS_URL = "ws://3.12.170.176:8000/receipts/ws";
+    private static final String RECEIPTS_BASE_URL = "http://34.60.178.4";
+    private static final String WS_URL = "ws://34.60.178.4/receipts/ws";
     private static final String UPLOADER_NIT = "901000123";
 
     public SipScanClient(WebClient erpWebClient, WebClient receiptsWebClient) {
@@ -64,7 +64,7 @@ public class SipScanClient {
 
     public String waitForReceiptViaWebSocket(String token, String receiptId) {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<String> completedReceiptId = new AtomicReference<>();
+        AtomicReference<String> receiptStatus = new AtomicReference<>("pending");
 
         String wsUrl = WS_URL + "?nit=" + UPLOADER_NIT + "&token=" + token;
 
@@ -73,15 +73,18 @@ public class SipScanClient {
         try {
             wsClient.execute(new AbstractWebSocketHandler() {
                 @Override
-                protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+                protected void handleTextMessage(WebSocketSession session,
+                                                 TextMessage message) throws Exception {
                     String payload = message.getPayload();
-
-                    if (payload.contains("suggestion_completed")) {
-                        if (payload.contains(receiptId)) {
-                            completedReceiptId.set(receiptId);
-                            latch.countDown();
-                            session.close();
+                    if (payload.contains("suggestion_completed")
+                            && payload.contains(receiptId)) {
+                        if (payload.contains("\"failed\"")) {
+                            receiptStatus.set("failed");
+                        } else {
+                            receiptStatus.set("completed");
                         }
+                        latch.countDown();
+                        session.close();
                     }
                 }
 
@@ -90,14 +93,10 @@ public class SipScanClient {
                 }
             }, wsUrl).get(10, TimeUnit.SECONDS);
 
-            boolean received = latch.await(120, TimeUnit.SECONDS);
-
-            if (!received) {
-                return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
-            }
+            latch.await(120, TimeUnit.SECONDS);
 
         } catch (Exception e) {
-            return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
+            // Si falla el WebSocket devuelve la URL igual
         }
 
         return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
