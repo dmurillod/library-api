@@ -80,18 +80,7 @@ public class PurchaseService {
     }
 
     private String waitForPdf(String token, String receiptId) {
-        int maxAttempts = 10;
-        for (int i = 0; i < maxAttempts; i++) {
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            if (sipScanClient.isPdfReady(token, receiptId)) {
-                break;
-            }
-        }
-        return "http://3.12.170.176:8000/v2/receipts/" + receiptId + "/pdf";
+        return sipScanClient.waitForReceiptViaWebSocket(token, receiptId);
     }
 
     private String buildFacturaText(BookResponse book, PurchaseRequest request) {
