@@ -51,7 +51,8 @@ class PurchaseServiceTest {
         when(sipScanClient.login()).thenReturn("fake-jwt-token");
         when(sipScanClient.sendReceiptText(anyString(), anyString()))
                 .thenReturn("550e8400-e29b-41d4-a716-446655440000");
-        when(sipScanClient.isPdfReady(anyString(), anyString())).thenReturn(true);
+        when(sipScanClient.waitForReceiptViaWebSocket(anyString(), anyString()))
+                .thenReturn("http://3.12.170.176:8000/v2/receipts/550e8400-e29b-41d4-a716-446655440000/pdf");
     }
 
     @Test
@@ -101,5 +102,19 @@ class PurchaseServiceTest {
         PurchaseResponse response = purchaseService.processPurchase(requestNoIsbn);
 
         assertNotNull(response);
+    }
+
+    @Test
+    void processPurchase_receiptHasPdfUrl() {
+        when(bookRepository.existsByIsbn("978-0132350884")).thenReturn(false);
+        when(bookService.create(any())).thenReturn(bookResponse);
+        mockSipScan();
+
+        PurchaseResponse response = purchaseService.processPurchase(request);
+
+        assertNotNull(response.pdf_url());
+        assertTrue(response.pdf_url().contains("receipts"));
+        assertEquals("Biblioteca Central", response.receipt().empresa());
+        assertEquals("901000123", response.receipt().nit());
     }
 }
