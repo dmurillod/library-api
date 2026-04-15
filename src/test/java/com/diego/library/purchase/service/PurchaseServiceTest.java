@@ -35,7 +35,7 @@ class PurchaseServiceTest {
 
     @BeforeEach
     void setUp() {
-        pqrDto = new PqrDto(1L, "Clean Code", "Juan Pérez", 5);
+        pqrDto = new PqrDto("1", "Clean Code", "Juan Pérez", 5);
         request = new PurchaseRequest("Clean Code", "Robert C. Martin", "978-0132350884", pqrDto);
 
         bookResponse = new BookResponse();
@@ -126,7 +126,7 @@ class PurchaseServiceTest {
 
         PurchaseResponse response = purchaseService.processPurchase(request);
 
-        assertEquals(1L, response.pqr().id());
+        assertEquals("1", response.pqr().id());
         assertEquals("Clean Code", response.pqr().asunto());
         assertEquals("Juan Pérez", response.pqr().responsable());
         assertEquals(5, response.pqr().conteo());
