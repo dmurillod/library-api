@@ -64,10 +64,8 @@ public class SipScanClient {
 
     public String waitForReceiptViaWebSocket(String token, String receiptId) {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<String> receiptStatus = new AtomicReference<>("pending");
 
         String wsUrl = WS_URL + "?nit=" + UPLOADER_NIT + "&token=" + token;
-
         StandardWebSocketClient wsClient = new StandardWebSocketClient();
 
         try {
@@ -78,11 +76,6 @@ public class SipScanClient {
                     String payload = message.getPayload();
                     if (payload.contains("suggestion_completed")
                             && payload.contains(receiptId)) {
-                        if (payload.contains("\"failed\"")) {
-                            receiptStatus.set("failed");
-                        } else {
-                            receiptStatus.set("completed");
-                        }
                         latch.countDown();
                         session.close();
                     }
@@ -96,7 +89,7 @@ public class SipScanClient {
             latch.await(120, TimeUnit.SECONDS);
 
         } catch (Exception e) {
-            // Si falla el WebSocket devuelve la URL igual
+            // Si falla devuelve la URL igual
         }
 
         return RECEIPTS_BASE_URL + "/v2/receipts/" + receiptId + "/pdf";
