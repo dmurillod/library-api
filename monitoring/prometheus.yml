@@ -6,4 +6,4 @@ scrape_configs:
   - job_name: 'library-api'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['app:8080']
+      - targets: ['18.224.71.133:8080']
