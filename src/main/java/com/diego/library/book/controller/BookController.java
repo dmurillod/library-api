@@ -1,5 +1,6 @@
 package com.diego.library.book.controller;
 
+import com.diego.library.book.dto.BookPatchRequest;
 import com.diego.library.book.dto.BookRequest;
 import com.diego.library.book.dto.BookResponse;
 import com.diego.library.book.service.BookService;
@@ -45,5 +46,11 @@ public class BookController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @PatchMapping("/{id}")
+    public BookResponse patch(@PathVariable Long id,
+                              @RequestBody BookPatchRequest request) {
+        return service.patch(id, request);
     }
 }
