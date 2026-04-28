@@ -10,6 +10,7 @@ public class BookResponse {
     private String isbn;
     private boolean available;
     private LocalDateTime createdAt;
+    private String pqrId;
 
     public Long getId() {
         return id;
@@ -57,5 +58,13 @@ public class BookResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPqrId() {
+        return pqrId;
+    }
+
+    public void setPqrId(String pqrId) {
+        this.pqrId = pqrId;
     }
 }
