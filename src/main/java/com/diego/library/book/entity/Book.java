@@ -27,6 +27,9 @@ public class Book {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = true)
+    private String pqrId;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -78,5 +81,13 @@ public class Book {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getPqrId() {
+        return pqrId;
+    }
+
+    public void setPqrId(String pqrId) {
+        this.pqrId = pqrId;
     }
 }
