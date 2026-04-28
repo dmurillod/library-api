@@ -22,6 +22,7 @@ public class BookMapper {
         response.setIsbn(book.getIsbn());
         response.setAvailable(book.isAvailable());
         response.setCreatedAt(book.getCreatedAt());
+        response.setPqrId(book.getPqrId());
         return response;
     }
 }
