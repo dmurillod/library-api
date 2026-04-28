@@ -39,4 +39,11 @@ public class PurchaseController {
             @Valid @RequestBody BookRequest request) {
         return ResponseEntity.ok(bookService.update(id, request));
     }
+
+    @DeleteMapping("/by-pqr/{pqrId}")
+    @Operation(summary = "Elimina libros asociados a una PQR cancelada")
+    public ResponseEntity<Void> deleteByPqrId(@PathVariable String pqrId) {
+        purchaseService.deleteByPqrId(pqrId);
+        return ResponseEntity.noContent().build();
+    }
 }
