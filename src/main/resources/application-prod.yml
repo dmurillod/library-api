@@ -11,7 +11,7 @@ spring:
 
 services:
   receipts:
-    url: http://34.60.178.4
+    url: http://34.61.106.141
   erp:
     url: https://sipsoftware.co/erp/usuarios
 
