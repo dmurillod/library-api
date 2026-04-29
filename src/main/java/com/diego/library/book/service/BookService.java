@@ -1,5 +1,6 @@
 package com.diego.library.book.service;
 
+import com.diego.library.book.dto.BookPatchRequest;
 import com.diego.library.book.dto.BookRequest;
 import com.diego.library.book.dto.BookResponse;
 import com.diego.library.book.entity.Book;
@@ -68,5 +69,27 @@ public class BookService {
                 .orElseThrow(() -> new RuntimeException("Book not found"));
 
         repository.delete(book);
+    }
+
+    public BookResponse patch(Long id, BookPatchRequest request) {
+        Book book = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Book not found"));
+
+        if (request.getTitle() != null) {
+            book.setTitle(request.getTitle());
+        }
+        if (request.getAuthor() != null) {
+            book.setAuthor(request.getAuthor());
+        }
+        if (request.getIsbn() != null) {
+            if (!book.getIsbn().equals(request.getIsbn())
+                    && repository.existsByIsbn(request.getIsbn())) {
+                throw new RuntimeException("Book with this ISBN already exists");
+            }
+            book.setIsbn(request.getIsbn());
+        }
+
+        Book updated = repository.save(book);
+        return BookMapper.toResponse(updated);
     }
 }

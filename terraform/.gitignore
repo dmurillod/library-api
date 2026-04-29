@@ -1,0 +1,9 @@
+# Terraform state files (contain sensitive info)
+*.tfstate
+*.tfstate.backup
+
+# Terraform directory
+.terraform/
+
+# Variables file with passwords
+terraform.tfvars

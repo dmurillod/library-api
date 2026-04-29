@@ -1,6 +1,8 @@
 package com.diego.library.book.service;
 
+import com.diego.library.book.dto.BookPatchRequest;
 import com.diego.library.book.dto.BookRequest;
+import com.diego.library.book.dto.BookResponse;
 import com.diego.library.book.entity.Book;
 import com.diego.library.book.repository.BookRepository;
 import org.junit.jupiter.api.Test;
@@ -130,5 +132,52 @@ class BookServiceTest {
 
         assertThrows(RuntimeException.class,
                 () -> service.delete(1L));
+    }
+
+    @Test
+    void patch_updatesOnlyTitle() {
+        Book book = new Book();
+        book.setId(1L);
+        book.setTitle("Clean Code");
+        book.setAuthor("Robert C. Martin");
+        book.setIsbn("978-0132350884");
+
+        BookPatchRequest request = new BookPatchRequest();
+        request.setTitle("Clean Code - Updated");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(book));
+        when(repository.save(any())).thenReturn(book);
+
+        BookResponse response = service.patch(1L, request);
+
+        assertNotNull(response);
+        verify(repository).save(any());
+    }
+
+    @Test
+    void patch_bookNotFound_throwsException() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        BookPatchRequest request = new BookPatchRequest();
+        request.setTitle("New Title");
+
+        assertThrows(RuntimeException.class, () -> service.patch(99L, request));
+    }
+
+    @Test
+    void patch_duplicateIsbn_throwsException() {
+        Book book = new Book();
+        book.setId(1L);
+        book.setTitle("Clean Code");
+        book.setAuthor("Robert C. Martin");
+        book.setIsbn("978-0132350884");
+
+        BookPatchRequest request = new BookPatchRequest();
+        request.setIsbn("978-0000000000");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(book));
+        when(repository.existsByIsbn("978-0000000000")).thenReturn(true);
+
+        assertThrows(RuntimeException.class, () -> service.patch(1L, request));
     }
 }

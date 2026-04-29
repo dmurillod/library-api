@@ -57,9 +57,13 @@ public class PurchaseService {
     }
 
     private BookResponse getOrCreateBook(PurchaseRequest request) {
+        BookResponse savedBook;
+
         if (request.isbn() != null && bookRepository.existsByIsbn(request.isbn())) {
-            return bookRepository.findByIsbn(request.isbn())
+            savedBook = bookRepository.findByIsbn(request.isbn())
                     .map(b -> {
+                        b.setPqrId(request.pqr().id());
+                        bookRepository.save(b);
                         BookResponse r = new BookResponse();
                         r.setId(b.getId());
                         r.setTitle(b.getTitle());
@@ -69,29 +73,27 @@ public class PurchaseService {
                         r.setCreatedAt(b.getCreatedAt());
                         return r;
                     }).orElseThrow();
+        } else {
+            BookRequest bookRequest = new BookRequest();
+            bookRequest.setTitle(request.titulo_libro());
+            bookRequest.setAuthor(request.autor());
+            bookRequest.setIsbn(request.isbn() != null ? request.isbn()
+                    : "GEN-" + request.titulo_libro().replaceAll("\\s+", "-").toUpperCase()
+                    + "-" + System.currentTimeMillis());
+            savedBook = bookService.create(bookRequest);
+
+            // Asignar pqrId después de crear
+            bookRepository.findById(savedBook.getId()).ifPresent(b -> {
+                b.setPqrId(request.pqr().id());
+                bookRepository.save(b);
+            });
         }
-        BookRequest bookRequest = new BookRequest();
-        bookRequest.setTitle(request.titulo_libro());
-        bookRequest.setAuthor(request.autor());
-        bookRequest.setIsbn(request.isbn() != null ? request.isbn()
-                : "GEN-" + request.titulo_libro().replaceAll("\\s+", "-").toUpperCase()
-                + "-" + System.currentTimeMillis());
-        return bookService.create(bookRequest);
+
+        return savedBook;
     }
 
     private String waitForPdf(String token, String receiptId) {
-        int maxAttempts = 10;
-        for (int i = 0; i < maxAttempts; i++) {
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            if (sipScanClient.isPdfReady(token, receiptId)) {
-                break;
-            }
-        }
-        return "http://3.12.170.176:8000/v2/receipts/" + receiptId + "/pdf";
+        return sipScanClient.waitForReceiptViaWebSocket(token, receiptId);
     }
 
     private String buildFacturaText(BookResponse book, PurchaseRequest request) {
@@ -106,5 +108,9 @@ public class PurchaseService {
                 "Solicitado por PQR: " + request.pqr().asunto() + "\n" +
                 "Responsable: " + request.pqr().responsable() + "\n" +
                 "Cantidad de solicitudes: " + request.pqr().conteo();
+    }
+
+    public void deleteByPqrId(String pqrId) {
+        bookRepository.findByPqrId(pqrId).forEach(bookRepository::delete);
     }
 }
