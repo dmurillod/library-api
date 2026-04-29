@@ -1,0 +1,5 @@
+aws_region   = "us-east-2"
+project_name = "library-api-tf"
+db_username  = "postgres"
+db_password  = "Library2026!"
+db_name      = "library_api_tf"
