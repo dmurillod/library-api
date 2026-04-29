@@ -12,10 +12,10 @@ spring:
     show-sql: true
 
 services:
-    receipts:
-      url: http://34.60.178.4
-    erp:
-      url: https://sipsoftware.co/erp/usuarios
+  receipts:
+    url: http://34.61.106.141
+  erp:
+    url: https://sipsoftware.co/erp/usuarios
 
 management:
   endpoints:
