@@ -18,8 +18,8 @@ public class SipScanClient {
     private final WebClient erpWebClient;
     private final WebClient receiptsWebClient;
 
-    private static final String RECEIPTS_BASE_URL = "http://34.61.106.141";
-    private static final String WS_URL = "ws://34.61.106.141/receipts/ws";
+    private static final String RECEIPTS_BASE_URL = "http://34.173.137.89";
+    private static final String WS_URL = "ws://34.173.137.89/receipts/ws";
     private static final String UPLOADER_NIT = "901000123";
 
     public SipScanClient(WebClient erpWebClient, WebClient receiptsWebClient) {
