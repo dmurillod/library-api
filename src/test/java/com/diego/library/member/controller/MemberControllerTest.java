@@ -65,23 +65,6 @@ class MemberControllerTest {
 // ──────────────────────────────────────────
 
     @Test
-    void create_shouldReturn201_whenRequestIsValid() throws Exception {
-        when(memberService.create(any(MemberRequest.class))).thenReturn(memberResponse);
-
-        mockMvc.perform(post("/api/v1/members")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.firstName").value("Diego"))
-                .andExpect(jsonPath("$.lastName").value("Garcia"))
-                .andExpect(jsonPath("$.email").value("diego@email.com"))
-                .andExpect(jsonPath("$.active").value(true));
-
-        verify(memberService).create(any(MemberRequest.class));
-    }
-
-    @Test
     void create_shouldReturn400_whenFirstNameIsBlank() throws Exception {
         validRequest.setFirstName("");
 
@@ -126,7 +109,24 @@ class MemberControllerTest {
         verifyNoInteractions(memberService);
     }
 
+
 // ──────────────────────────────────────────
+@Test
+void create_shouldReturn201_whenRequestIsValid() throws Exception {
+    when(memberService.create(any(MemberRequest.class))).thenReturn(memberResponse);
+
+    mockMvc.perform(post("/api/v1/members")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(1L))
+            .andExpect(jsonPath("$.firstName").value("Diego"))
+            .andExpect(jsonPath("$.lastName").value("Garcia"))
+            .andExpect(jsonPath("$.email").value("diego@email.com"))
+            .andExpect(jsonPath("$.active").value(true));
+
+    verify(memberService).create(any(MemberRequest.class));
+}
 // GET /api/v1/members/{id}
 // ──────────────────────────────────────────
 
