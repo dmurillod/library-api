@@ -31,3 +31,6 @@ management:
     export:
       prometheus:
         enabled: true
+  app:
+    version: 2.0.0
+    environment: stable
