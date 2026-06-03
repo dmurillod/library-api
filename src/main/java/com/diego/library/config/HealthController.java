@@ -17,7 +17,7 @@ public class HealthController {
     private String environment;
 
     @GetMapping("/health")
-    public Map<String, Object> health() {
+    public Map<String, Object> Info() {
         return Map.of(
                 "status", environment,
                 "version", version,
