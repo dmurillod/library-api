@@ -22,7 +22,10 @@ public class HealthController {
                 "status", environment,
                 "version", version,
                 "deployedAt", LocalDateTime.now().toString(),
-                "service", "library-api"
+                "service", "library-api",
+                "features", environment.equals("canary")
+                        ? "new-book-recommendations"
+                        : "standard"
         );
     }
 }
