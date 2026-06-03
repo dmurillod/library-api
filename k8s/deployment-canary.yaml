@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: library-api-canary
+  labels:
+    app: library-api
+    version: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: library-api
+      version: canary
+  template:
+    metadata:
+      labels:
+        app: library-api
+        version: canary
+    spec:
+      containers:
+        - name: library-api
+          image: gcr.io/secrets-465320/library-api:canary
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: DB_URL_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: library-secrets
+                  key: db-url
+            - name: DB_USER_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: library-secrets
+                  key: db-user
+            - name: DB_PASSWORD_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: library-secrets
+                  key: db-password
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: library-secrets
+                  key: db-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: library-secrets
+                  key: db-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: library-secrets
+                  key: db-password
+            - name: RECEIPTS_SERVICE_URL_PROD
+              value: "http://34.173.137.89"
+            - name: SERVICES_ERP_URL
+              value: "https://sipsoftware.co/erp/usuarios"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 10
