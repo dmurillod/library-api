@@ -25,4 +25,9 @@ public class HealthController {
                 "service", "library-api"
         );
     }
+    @GetMapping("/canary-info")
+    public Map<String, Object> health() {
+        return Map.of("Message", " <------------> prueba de santiago arango florez");
+    }
+    
 }
